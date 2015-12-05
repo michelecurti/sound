@@ -339,8 +339,13 @@ static int sst_acpi_probe(struct platform_device *pdev)
 
 	ret = is_byt_cr(dev, &bytcr);
 	if ((ret < 0) || (bytcr == false)) {
+#if 0
 		snprintf(ctx->firmware_name, sizeof(ctx->firmware_name),
 			"%s%s", mach->fw_filename, ".bin");
+#else
+		snprintf(ctx->firmware_name, sizeof(ctx->firmware_name),
+			"%s%s", mach->fw_filename, "_ssp0.bin");
+#endif
 	} else {
 		snprintf(ctx->firmware_name, sizeof(ctx->firmware_name),
 			"%s%s", mach->fw_filename, "_ssp0.bin");
