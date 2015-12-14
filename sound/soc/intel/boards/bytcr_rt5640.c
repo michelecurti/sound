@@ -32,6 +32,18 @@
 #include "../atom/sst-atom-controls.h"
 #include "../common/sst-acpi.h"
 
+enum {
+	BYT_RT5640_DMIC1_MAP,
+	BYT_RT5640_DMIC2_MAP,
+	BYT_RT5640_IN1_MAP,
+};
+
+#define BYT_RT5640_MAP(quirk)	((quirk) & 0xff)
+#define BYT_RT5640_DMIC_EN	BIT(16)
+
+static unsigned long byt_rt5640_quirk = BYT_RT5640_DMIC1_MAP |
+					BYT_RT5640_DMIC_EN;
+
 static const struct snd_soc_dapm_widget byt_rt5640_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone", NULL),
 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
@@ -69,18 +81,6 @@ static const struct snd_soc_dapm_route byt_rt5640_intmic_in1_map[] = {
 	{"Internal Mic", NULL, "MICBIAS1"},
 	{"IN1P", NULL, "Internal Mic"},
 };
-
-enum {
-	BYT_RT5640_DMIC1_MAP,
-	BYT_RT5640_DMIC2_MAP,
-	BYT_RT5640_IN1_MAP,
-};
-
-#define BYT_RT5640_MAP(quirk)	((quirk) & 0xff)
-#define BYT_RT5640_DMIC_EN	BIT(16)
-
-static unsigned long byt_rt5640_quirk = BYT_RT5640_DMIC1_MAP |
-					BYT_RT5640_DMIC_EN;
 
 static const struct snd_kcontrol_new byt_rt5640_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Headphone"),
