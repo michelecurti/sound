@@ -40,6 +40,7 @@ enum {
 
 #define BYT_RT5640_MAP(quirk)	((quirk) & 0xff)
 #define BYT_RT5640_DMIC_EN	BIT(16)
+#define BYT_RT5640_SWAP_AIF     BIT(17)
 
 static unsigned long byt_rt5640_quirk = BYT_RT5640_DMIC1_MAP |
 					BYT_RT5640_DMIC_EN;
@@ -52,12 +53,11 @@ static const struct snd_soc_dapm_widget byt_rt5640_widgets[] = {
 };
 
 static const struct snd_soc_dapm_route byt_rt5640_audio_map[] = {
-	{"AIF1 Playback", NULL, "ssp2 Tx"},
+
 	{"ssp2 Tx", NULL, "codec_out0"},
 	{"ssp2 Tx", NULL, "codec_out1"},
 	{"codec_in0", NULL, "ssp2 Rx"},
 	{"codec_in1", NULL, "ssp2 Rx"},
-	{"ssp2 Rx", NULL, "AIF1 Capture"},
 
 	{"Headset Mic", NULL, "MICBIAS1"},
 	{"IN2P", NULL, "Headset Mic"},
@@ -81,6 +81,18 @@ static const struct snd_soc_dapm_route byt_rt5640_intmic_in1_map[] = {
 	{"Internal Mic", NULL, "MICBIAS1"},
 	{"IN1P", NULL, "Internal Mic"},
 };
+
+static const struct snd_soc_dapm_route byt_rt5640_aif1_map[] = {
+	{"AIF1 Playback", NULL, "ssp2 Tx"},
+	{"ssp2 Rx", NULL, "AIF1 Capture"},
+};
+
+static const struct snd_soc_dapm_route byt_rt5640_aif2_map[] = {
+	{"AIF2 Playback", NULL, "ssp2 Tx"},
+	{"ssp2 Rx", NULL, "AIF2 Capture"},
+};
+
+
 
 static const struct snd_kcontrol_new byt_rt5640_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Headphone"),
@@ -182,7 +194,6 @@ static int byt_rt5640_init(struct snd_soc_pcm_runtime *runtime)
 		return ret;
 	}
 
-	dmi_check_system(byt_rt5640_quirk_table);
 	switch (BYT_RT5640_MAP(byt_rt5640_quirk)) {
 	case BYT_RT5640_IN1_MAP:
 		custom_map = byt_rt5640_intmic_in1_map;
@@ -200,6 +211,19 @@ static int byt_rt5640_init(struct snd_soc_pcm_runtime *runtime)
 	ret = snd_soc_dapm_add_routes(&card->dapm, custom_map, num_routes);
 	if (ret)
 		return ret;
+
+	if (byt_rt5640_quirk & BYT_RT5640_SWAP_AIF) {
+		ret = snd_soc_dapm_add_routes(&card->dapm,
+					byt_rt5640_aif2_map,
+					ARRAY_SIZE(byt_rt5640_aif2_map));
+	} else {
+		ret = snd_soc_dapm_add_routes(&card->dapm,
+					byt_rt5640_aif1_map,
+					ARRAY_SIZE(byt_rt5640_aif1_map));
+	}
+	if (ret)
+		return ret;
+
 
 	if (byt_rt5640_quirk & BYT_RT5640_DMIC_EN) {
 		ret = rt5640_dmic_enable(codec, 0, 0);
@@ -317,7 +341,7 @@ static struct snd_soc_dai_link byt_rt5640_dais[] = {
 		.cpu_dai_name = "ssp2-port",
 		.platform_name = "sst-mfld-platform",
 		.no_pcm = 1,
-		.codec_dai_name = "rt5640-aif1",
+		.codec_dai_name = "rt5640-aif1", /* changed w/ AIF_SWAP quirk */
 		.codec_name = "i2c-10EC5640:00", /* overwritten with HID */
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF
 						| SND_SOC_DAIFMT_CBS_CFS,
@@ -344,6 +368,7 @@ static struct snd_soc_card byt_rt5640_card = {
 };
 
 static char byt_rt5640_codec_name[16]; /* i2c-<HID>:00 with HID being 8 chars */
+static char byt_rt5640_codec_aif_name[12]; /*  = "rt5640-aif[1|2]" */
 
 static int snd_byt_rt5640_mc_probe(struct platform_device *pdev)
 {
@@ -358,6 +383,20 @@ static int snd_byt_rt5640_mc_probe(struct platform_device *pdev)
 	snprintf(byt_rt5640_codec_name, sizeof(byt_rt5640_codec_name),
 		 "%s%s%s", "i2c-", mach->id, ":00");
 	byt_rt5640_dais[MERR_DPCM_COMPR+1].codec_name = byt_rt5640_codec_name;
+
+	/* check quirks before creating card */
+	dmi_check_system(byt_rt5640_quirk_table);
+
+	if (byt_rt5640_quirk & BYT_RT5640_SWAP_AIF) {
+
+		/* fixup codec aif name */
+		snprintf(byt_rt5640_codec_aif_name,
+			sizeof(byt_rt5640_codec_aif_name),
+			"%s", "rt5640-aif2");
+
+		byt_rt5640_dais[MERR_DPCM_COMPR+1].codec_dai_name =
+			byt_rt5640_codec_aif_name;
+	}
 
 	ret_val = devm_snd_soc_register_card(&pdev->dev, &byt_rt5640_card);
 
