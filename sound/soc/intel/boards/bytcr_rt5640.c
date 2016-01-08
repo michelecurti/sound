@@ -40,6 +40,7 @@ enum {
 
 #define BYT_RT5640_MAP(quirk)	((quirk) & 0xff)
 #define BYT_RT5640_DMIC_EN	BIT(16)
+#define BYT_RT5640_SWAP_AIF     BIT(17)
 
 static unsigned long byt_rt5640_quirk = BYT_RT5640_DMIC1_MAP |
 					BYT_RT5640_DMIC_EN;
@@ -52,13 +53,6 @@ static const struct snd_soc_dapm_widget byt_rt5640_widgets[] = {
 };
 
 static const struct snd_soc_dapm_route byt_rt5640_audio_map[] = {
-	{"AIF1 Playback", NULL, "ssp2 Tx"},
-	{"ssp2 Tx", NULL, "codec_out0"},
-	{"ssp2 Tx", NULL, "codec_out1"},
-	{"codec_in0", NULL, "ssp2 Rx"},
-	{"codec_in1", NULL, "ssp2 Rx"},
-	{"ssp2 Rx", NULL, "AIF1 Capture"},
-
 	{"Headset Mic", NULL, "MICBIAS1"},
 	{"IN2P", NULL, "Headset Mic"},
 	{"Headphone", NULL, "HPOL"},
@@ -81,6 +75,26 @@ static const struct snd_soc_dapm_route byt_rt5640_intmic_in1_map[] = {
 	{"Internal Mic", NULL, "MICBIAS1"},
 	{"IN1P", NULL, "Internal Mic"},
 };
+
+static const struct snd_soc_dapm_route byt_rt5640_aif1_map[] = {
+	{"ssp2 Tx", NULL, "codec_out0"},
+	{"ssp2 Tx", NULL, "codec_out1"},
+	{"codec_in0", NULL, "ssp2 Rx"},
+	{"codec_in1", NULL, "ssp2 Rx"},
+
+	{"AIF1 Playback", NULL, "ssp2 Tx"},
+	{"ssp2 Rx", NULL, "AIF1 Capture"},
+};
+
+static const struct snd_soc_dapm_route byt_rt5640_aif2_map[] = {
+	{"ssp0 Tx", NULL, "modem_out"},
+	{"modem_in", NULL, "ssp0 Rx"},
+
+	{"AIF2 Playback", NULL, "ssp0 Tx"},
+	{"ssp0 Rx", NULL, "AIF2 Capture"},
+};
+
+
 
 static const struct snd_kcontrol_new byt_rt5640_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Headphone"),
@@ -192,6 +206,19 @@ static int byt_rt5640_init(struct snd_soc_pcm_runtime *runtime)
 	if (ret)
 		return ret;
 
+	if (byt_rt5640_quirk & BYT_RT5640_SWAP_AIF) {
+		ret = snd_soc_dapm_add_routes(&card->dapm,
+					byt_rt5640_aif2_map,
+					ARRAY_SIZE(byt_rt5640_aif2_map));
+	} else {
+		ret = snd_soc_dapm_add_routes(&card->dapm,
+					byt_rt5640_aif1_map,
+					ARRAY_SIZE(byt_rt5640_aif1_map));
+	}
+	if (ret)
+		return ret;
+
+
 	if (byt_rt5640_quirk & BYT_RT5640_DMIC_EN) {
 		ret = rt5640_dmic_enable(codec, 0, 0);
 		if (ret)
@@ -221,32 +248,61 @@ static int byt_rt5640_codec_fixup(struct snd_soc_pcm_runtime *rtd,
 						SNDRV_PCM_HW_PARAM_CHANNELS);
 	int ret;
 
-	/* The DSP will covert the FE rate to 48k, stereo, 24bits */
+	/* The DSP will covert the FE rate to 48k, stereo */
 	rate->min = rate->max = 48000;
 	channels->min = channels->max = 2;
 
-	/* set SSP2 to 24-bit */
-	params_set_format(params, SNDRV_PCM_FORMAT_S24_LE);
+	if (byt_rt5640_quirk & BYT_RT5640_SWAP_AIF) {
 
-	/*
-	 * Default mode for SSP configuration is TDM 4 slot, override config
-	 * with explicit setting to I2S 2ch 24-bit. The word length is set with
-	 * dai_set_tdm_slot() since there is no other API exposed
-	 */
-	ret = snd_soc_dai_set_fmt(rtd->cpu_dai,
+		/* set SSP0 to 16-bit */
+		params_set_format(params, SNDRV_PCM_FORMAT_S16_LE);
+
+		/*
+		 * Default mode for SSP configuration is TDM 4 slot, override config
+		 * with explicit setting to I2S 2ch 16-bit. The word length is set with
+		 * dai_set_tdm_slot() since there is no other API exposed
+		 */
+		ret = snd_soc_dai_set_fmt(rtd->cpu_dai,
 				  SND_SOC_DAIFMT_I2S     |
 				  SND_SOC_DAIFMT_NB_IF   |
 				  SND_SOC_DAIFMT_CBS_CFS
 				  );
-	if (ret < 0) {
-		dev_err(rtd->dev, "can't set format to I2S, err %d\n", ret);
-		return ret;
-	}
+		if (ret < 0) {
+			dev_err(rtd->dev, "can't set format to I2S, err %d\n", ret);
+			return ret;
+		}
 
-	ret = snd_soc_dai_set_tdm_slot(rtd->cpu_dai, 0x3, 0x3, 2, 24);
-	if (ret < 0) {
-		dev_err(rtd->dev, "can't set I2S config, err %d\n", ret);
-		return ret;
+		ret = snd_soc_dai_set_tdm_slot(rtd->cpu_dai, 0x3, 0x3, 2, 16);
+		if (ret < 0) {
+			dev_err(rtd->dev, "can't set I2S config, err %d\n", ret);
+			return ret;
+		}
+	} else {
+
+		/* set SSP2 to 24-bit */
+		params_set_format(params, SNDRV_PCM_FORMAT_S24_LE);
+
+		/*
+		 * Default mode for SSP configuration is TDM 4 slot, override config
+		 * with explicit setting to I2S 2ch 24-bit. The word length is set with
+		 * dai_set_tdm_slot() since there is no other API exposed
+		 */
+		ret = snd_soc_dai_set_fmt(rtd->cpu_dai,
+					SND_SOC_DAIFMT_I2S     |
+					SND_SOC_DAIFMT_NB_IF   |
+					SND_SOC_DAIFMT_CBS_CFS
+			);
+
+		if (ret < 0) {
+			dev_err(rtd->dev, "can't set format to I2S, err %d\n", ret);
+			return ret;
+		}
+
+		ret = snd_soc_dai_set_tdm_slot(rtd->cpu_dai, 0x3, 0x3, 2, 24);
+		if (ret < 0) {
+			dev_err(rtd->dev, "can't set I2S config, err %d\n", ret);
+			return ret;
+		}
 	}
 
 	return 0;
@@ -305,10 +361,10 @@ static struct snd_soc_dai_link byt_rt5640_dais[] = {
 	{
 		.name = "SSP2-Codec",
 		.be_id = 1,
-		.cpu_dai_name = "ssp2-port",
+		.cpu_dai_name = "ssp2-port",     /* changed w/ AIF_SWAP quirk */
 		.platform_name = "sst-mfld-platform",
 		.no_pcm = 1,
-		.codec_dai_name = "rt5640-aif1",
+		.codec_dai_name = "rt5640-aif1", /* changed w/ AIF_SWAP quirk */
 		.codec_name = "i2c-10EC5640:00", /* overwritten with HID */
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF
 						| SND_SOC_DAIFMT_CBS_CFS,
@@ -335,6 +391,8 @@ static struct snd_soc_card byt_rt5640_card = {
 };
 
 static char byt_rt5640_codec_name[16]; /* i2c-<HID>:00 with HID being 8 chars */
+static char byt_rt5640_codec_aif_name[12]; /*  = "rt5640-aif[1|2]" */
+static char byt_rt5640_cpu_dai_name[10]; /*  = "ssp[0|2]-port" */
 
 static int snd_byt_rt5640_mc_probe(struct platform_device *pdev)
 {
@@ -368,6 +426,25 @@ static int snd_byt_rt5640_mc_probe(struct platform_device *pdev)
 
 	/* check quirks before creating card */
 	dmi_check_system(byt_rt5640_quirk_table);
+
+	if (byt_rt5640_quirk & BYT_RT5640_SWAP_AIF) {
+
+		/* fixup codec aif name */
+		snprintf(byt_rt5640_codec_aif_name,
+			sizeof(byt_rt5640_codec_aif_name),
+			"%s", "rt5640-aif2");
+
+		byt_rt5640_dais[MERR_DPCM_COMPR+1].codec_dai_name =
+			byt_rt5640_codec_aif_name;
+
+		/* fixup cpu dai name */
+		snprintf(byt_rt5640_cpu_dai_name,
+			sizeof(byt_rt5640_cpu_dai_name),
+			"%s", "ssp0-port");
+
+		byt_rt5640_dais[dai_index].cpu_dai_name =
+			byt_rt5640_cpu_dai_name;
+	}
 
 	ret_val = devm_snd_soc_register_card(&pdev->dev, &byt_rt5640_card);
 
