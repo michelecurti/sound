@@ -41,6 +41,7 @@ enum {
 #define BYT_RT5640_MAP(quirk)	((quirk) & 0xff)
 #define BYT_RT5640_DMIC_EN	BIT(16)
 #define BYT_RT5640_SWAP_AIF     BIT(17)
+#define BYT_RT5640_MONO_SPEAKER BIT(18)
 
 static unsigned long byt_rt5640_quirk = BYT_RT5640_DMIC1_MAP |
 					BYT_RT5640_DMIC_EN;
@@ -57,10 +58,6 @@ static const struct snd_soc_dapm_route byt_rt5640_audio_map[] = {
 	{"IN2P", NULL, "Headset Mic"},
 	{"Headphone", NULL, "HPOL"},
 	{"Headphone", NULL, "HPOR"},
-	{"Speaker", NULL, "SPOLP"},
-	{"Speaker", NULL, "SPOLN"},
-	{"Speaker", NULL, "SPORP"},
-	{"Speaker", NULL, "SPORN"},
 };
 
 static const struct snd_soc_dapm_route byt_rt5640_intmic_dmic1_map[] = {
@@ -94,6 +91,17 @@ static const struct snd_soc_dapm_route byt_rt5640_aif2_map[] = {
 	{"ssp0 Rx", NULL, "AIF2 Capture"},
 };
 
+static const struct snd_soc_dapm_route byt_rt5640_stereo_spk_map[] = {
+	{"Speaker", NULL, "SPOLP"},
+	{"Speaker", NULL, "SPOLN"},
+	{"Speaker", NULL, "SPORP"},
+	{"Speaker", NULL, "SPORN"},
+};
+
+static const struct snd_soc_dapm_route byt_rt5640_mono_spk_map[] = {
+	{"Speaker", NULL, "SPOLP"},
+	{"Speaker", NULL, "SPOLN"},
+};
 
 
 static const struct snd_kcontrol_new byt_rt5640_controls[] = {
@@ -153,7 +161,8 @@ static const struct dmi_system_id byt_rt5640_quirk_table[] = {
 			DMI_EXACT_MATCH(DMI_PRODUCT_NAME, "T100TAF"),
 		},
 		.driver_data = (unsigned long *)(BYT_RT5640_IN1_MAP |
-						 BYT_RT5640_SWAP_AIF
+						 BYT_RT5640_SWAP_AIF |
+						 BYT_RT5640_MONO_SPEAKER
 						 ),
 	},
 	{
@@ -224,6 +233,18 @@ static int byt_rt5640_init(struct snd_soc_pcm_runtime *runtime)
 		ret = snd_soc_dapm_add_routes(&card->dapm,
 					byt_rt5640_aif1_map,
 					ARRAY_SIZE(byt_rt5640_aif1_map));
+	}
+	if (ret)
+		return ret;
+
+	if (byt_rt5640_quirk & BYT_RT5640_MONO_SPEAKER) {
+		ret = snd_soc_dapm_add_routes(&card->dapm,
+					byt_rt5640_mono_spk_map,
+					ARRAY_SIZE(byt_rt5640_mono_spk_map));
+	} else {
+		ret = snd_soc_dapm_add_routes(&card->dapm,
+					byt_rt5640_stereo_spk_map,
+					ARRAY_SIZE(byt_rt5640_stereo_spk_map));
 	}
 	if (ret)
 		return ret;
