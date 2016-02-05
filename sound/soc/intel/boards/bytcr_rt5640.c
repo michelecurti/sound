@@ -55,12 +55,6 @@ static const struct snd_soc_dapm_widget byt_rt5640_widgets[] = {
 };
 
 static const struct snd_soc_dapm_route byt_rt5640_audio_map[] = {
-
-	{"ssp2 Tx", NULL, "codec_out0"},
-	{"ssp2 Tx", NULL, "codec_out1"},
-	{"codec_in0", NULL, "ssp2 Rx"},
-	{"codec_in1", NULL, "ssp2 Rx"},
-
 	{"Headset Mic", NULL, "MICBIAS1"},
 	{"IN2P", NULL, "Headset Mic"},
 	{"Headphone", NULL, "HPOL"},
@@ -83,11 +77,19 @@ static const struct snd_soc_dapm_route byt_rt5640_intmic_in1_map[] = {
 static const struct snd_soc_dapm_route byt_rt5640_aif1_map[] = {
 	{"AIF1 Playback", NULL, "ssp2 Tx"},
 	{"ssp2 Rx", NULL, "AIF1 Capture"},
+
+	{"ssp2 Tx", NULL, "codec_out0"},
+	{"ssp2 Tx", NULL, "codec_out1"},
+	{"codec_in0", NULL, "ssp2 Rx"},
+	{"codec_in1", NULL, "ssp2 Rx"},
 };
 
 static const struct snd_soc_dapm_route byt_rt5640_aif2_map[] = {
-	{"AIF2 Playback", NULL, "ssp2 Tx"},
-	{"ssp2 Rx", NULL, "AIF2 Capture"},
+	{"AIF2 Playback", NULL, "ssp0 Tx"},
+	{"ssp0 Rx", NULL, "AIF2 Capture"},
+
+	{"ssp0 Tx", NULL, "modem_out"},
+	{"modem_in", NULL, "ssp0 Rx"},
 };
 
 static const struct snd_soc_dapm_route byt_rt5640_stereo_spk_map[] = {
@@ -151,7 +153,7 @@ static const struct dmi_system_id byt_rt5640_quirk_table[] = {
 			DMI_EXACT_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
 			DMI_EXACT_MATCH(DMI_PRODUCT_NAME, "T100TA"),
 		},
-		.driver_data = (unsigned long *)BYT_RT5640_IN1_MAP,
+		.driver_data = (unsigned long *)(BYT_RT5640_IN1_MAP | BYT_RT5640_SWAP_AIF),
 	},
 	{
 		.callback = byt_rt5640_quirk_cb,
@@ -407,6 +409,7 @@ static struct snd_soc_card byt_rt5640_card = {
 
 static char byt_rt5640_codec_name[16]; /* i2c-<HID>:00 with HID being 8 chars */
 static char byt_rt5640_codec_aif_name[12]; /*  = "rt5640-aif[1|2]" */
+static char byt_rt5640_cpu_dai_name[10]; /*  = "ssp[0|2]-port" */
 
 static int snd_byt_rt5640_mc_probe(struct platform_device *pdev)
 {
@@ -432,8 +435,17 @@ static int snd_byt_rt5640_mc_probe(struct platform_device *pdev)
 			sizeof(byt_rt5640_codec_aif_name),
 			"%s", "rt5640-aif2");
 
+		/* fixup cpu dai name */
+		snprintf(byt_rt5640_cpu_dai_name,
+			sizeof(byt_rt5640_cpu_dai_name),
+			"%s", "ssp0-port");
+
 		byt_rt5640_dais[MERR_DPCM_COMPR+1].codec_dai_name =
 			byt_rt5640_codec_aif_name;
+
+		byt_rt5640_dais[MERR_DPCM_COMPR+1].cpu_dai_name =
+			byt_rt5640_cpu_dai_name;
+
 	}
 
 	ret_val = devm_snd_soc_register_card(&pdev->dev, &byt_rt5640_card);
