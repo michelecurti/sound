@@ -7948,6 +7948,8 @@ static int chv_crtc_compute_clock(struct intel_crtc *crtc,
 static int vlv_crtc_compute_clock(struct intel_crtc *crtc,
 				  struct intel_crtc_state *crtc_state)
 {
+	struct drm_device *dev = crtc->base.dev;
+	struct drm_i915_private *dev_priv = dev->dev_private;
 	int refclk = 100000;
 	const intel_limit_t *limit = &intel_limits_vlv;
 
@@ -7964,7 +7966,18 @@ static int vlv_crtc_compute_clock(struct intel_crtc *crtc,
 		return -EINVAL;
 	}
 
+
 	vlv_compute_dpll(crtc, crtc_state);
+
+	/* Added for HDMI Audio */
+	if ((IS_CHERRYVIEW(dev)) || (IS_VALLEYVIEW(dev))) {
+		if (intel_pipe_has_type(crtc, INTEL_OUTPUT_HDMI)) {
+			dev_priv->tmds_clock_speed = crtc_state->port_clock;
+
+			mid_hdmi_audio_signal_event(dev_priv->dev,
+				HAD_EVENT_MODE_CHANGING);
+		}
+	}
 
 	return 0;
 }
@@ -14593,6 +14606,48 @@ static void intel_setup_outputs(struct drm_device *dev)
 	intel_init_pch_refclk(dev);
 
 	drm_helper_move_panel_connectors_to_head(dev);
+}
+
+void chv_set_lpe_audio_reg_pipe(struct drm_device *dev,
+				int encoder_type, enum port port)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct hdmi_audio_priv *hdmi_priv = get_hdmi_priv();
+
+	if (!hdmi_priv) {
+		DRM_DEBUG_KMS("hdmi_priv was never allocated\n");
+		return;
+	}
+
+	/*
+	 * Due to hardware limitaion, Port D will always
+	 * be driven by Pipe C. So Port B and Port C will
+	 * be driven by either Pipe A or PipeB, depending
+	 * on whether the LFP is MIPI or EDP.
+	 */
+
+	if (port == PORT_D) {
+		hdmi_priv->hdmi_lpe_audio_reg =
+			I915_HDMI_AUDIO_LPE_C_CONFIG;
+		hdmi_priv->pipe = PIPE_C;
+		if (encoder_type == INTEL_OUTPUT_HDMI)
+			hdmi_priv->hdmi_reg = HDMID;
+		//else
+		//	hdmi_priv->hdmi_reg = CHV_DP_D;
+	} else {
+
+		if (port == PORT_B) {
+			if (encoder_type == INTEL_OUTPUT_HDMI)
+				hdmi_priv->hdmi_reg = HDMIB;
+			//else
+			//	hdmi_priv->hdmi_reg = VLV_DP_B;
+		} else {
+			if (encoder_type == INTEL_OUTPUT_HDMI)
+				hdmi_priv->hdmi_reg = HDMIC;
+			//else
+			//	hdmi_priv->hdmi_reg = VLV_DP_C;
+		}
+	}
 }
 
 static void intel_user_framebuffer_destroy(struct drm_framebuffer *fb)
