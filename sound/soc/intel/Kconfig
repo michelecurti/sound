@@ -108,6 +108,19 @@ config SND_SOC_INTEL_BYTCR_RT5640_MACH
           Say Y if you have such a device
           If unsure select "N".
 
+config SND_SOC_INTEL_BYTCR_RT5645_MACH
+        tristate "ASoC Audio driver for Intel Baytrail and Baytrail-CR with RT5645 codec"
+	depends on X86 && I2C
+	select SND_SOC_RT5645
+	select SND_SST_MFLD_PLATFORM
+	select SND_SST_IPC_ACPI
+	select SND_SOC_INTEL_SST_MATCH if ACPI
+	help
+          This adds support for ASoC machine driver for Intel(R) Baytrail and Baytrail-CR
+          platforms with RT5645 audio codec.
+          Say Y if you have such a device
+          If unsure select "N".
+
 config SND_SOC_INTEL_BYTCR_RT5651_MACH
         tristate "ASoC Audio driver for Intel Baytrail and Baytrail-CR with RT5651 codec"
 	depends on X86 && I2C
