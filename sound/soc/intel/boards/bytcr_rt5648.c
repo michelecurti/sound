@@ -1,6 +1,6 @@
 /*
- *  cht-bsw-rt5645.c - ASoc Machine driver for Intel Cherryview-based platforms
- *                     Cherrytrail and Braswell, with RT5645 codec.
+ *  cht-bsw-rt5648.c - ASoc Machine driver for Intel Cherryview-based platforms
+ *                     Cherrytrail and Braswell, with RT5648 codec.
  *
  *  Copyright (C) 2015 Intel Corp
  *  Author: Fang, Yang A <yang.a.fang@intel.com>
@@ -28,11 +28,11 @@
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <sound/jack.h>
-#include "../../codecs/rt5645.h"
+#include "../../codecs/rt5648.h"
 #include "../atom/sst-atom-controls.h"
 
 #define CHT_PLAT_CLK_3_HZ	19200000
-#define CHT_CODEC_DAI	"rt5645-aif1"
+#define CHT_CODEC_DAI	"rt5648-aif1"
 
 struct cht_acpi_card {
 	char *codec_id;
@@ -79,7 +79,7 @@ static int platform_clock_control(struct snd_soc_dapm_widget *w,
 	 * runtime suspended. Codec needs clock for jack detection and button
 	 * press.
 	 */
-	ret = snd_soc_dai_set_sysclk(codec_dai, RT5645_SCLK_S_RCCLK,
+	ret = snd_soc_dai_set_sysclk(codec_dai, RT5648_SCLK_S_RCCLK,
 			0, SND_SOC_CLOCK_IN);
 	if (ret < 0) {
 		dev_err(card->dev, "can't set codec sysclk: %d\n", ret);
@@ -98,7 +98,7 @@ static const struct snd_soc_dapm_widget cht_dapm_widgets[] = {
 			platform_clock_control, SND_SOC_DAPM_POST_PMD),
 };
 
-static const struct snd_soc_dapm_route cht_rt5645_audio_map[] = {
+static const struct snd_soc_dapm_route cht_rt5648_audio_map[] = {
 	{"IN1P", NULL, "Headset Mic"},
 	{"IN1N", NULL, "Headset Mic"},
 	{"DMIC L1", NULL, "Int Mic"},
@@ -146,14 +146,14 @@ static int cht_aif1_hw_params(struct snd_pcm_substream *substream,
 	int ret;
 
 	/* set codec PLL source to the 19.2MHz platform clock (MCLK) */
-	ret = snd_soc_dai_set_pll(codec_dai, 0, RT5645_PLL1_S_MCLK,
+	ret = snd_soc_dai_set_pll(codec_dai, 0, RT5648_PLL1_S_MCLK,
 				  CHT_PLAT_CLK_3_HZ, params_rate(params) * 512);
 	if (ret < 0) {
 		dev_err(rtd->dev, "can't set codec pll: %d\n", ret);
 		return ret;
 	}
 
-	ret = snd_soc_dai_set_sysclk(codec_dai, RT5645_SCLK_S_PLL1,
+	ret = snd_soc_dai_set_sysclk(codec_dai, RT5648_SCLK_S_PLL1,
 				params_rate(params) * 512, SND_SOC_CLOCK_IN);
 	if (ret < 0) {
 		dev_err(rtd->dev, "can't set codec sysclk: %d\n", ret);
@@ -172,12 +172,12 @@ static int cht_codec_init(struct snd_soc_pcm_runtime *runtime)
 	struct cht_mc_private *ctx = snd_soc_card_get_drvdata(runtime->card);
 
 	/* Select clk_i2s1_asrc as ASRC clock source */
-	rt5645_sel_asrc_clk_src(codec,
-				RT5645_DA_STEREO_FILTER |
-				RT5645_DA_MONO_L_FILTER |
-				RT5645_DA_MONO_R_FILTER |
-				RT5645_AD_STEREO_FILTER,
-				RT5645_CLK_SEL_I2S1_ASRC);
+	rt5648_sel_asrc_clk_src(codec,
+				RT5648_DA_STEREO_FILTER |
+				RT5648_DA_MONO_L_FILTER |
+				RT5648_DA_MONO_R_FILTER |
+				RT5648_AD_STEREO_FILTER,
+				RT5648_CLK_SEL_I2S1_ASRC);
 
 	/* TDM 2 slots 16 bit, set Rx & Tx bitmask to 2 active slots */
 	ret = snd_soc_dai_set_tdm_slot(codec_dai, 0x3, 0x3, 2, 16);
@@ -201,7 +201,7 @@ static int cht_codec_init(struct snd_soc_pcm_runtime *runtime)
 		return ret;
 	}
 
-	rt5645_set_jack_detect(codec, &ctx->jack, &ctx->jack, &ctx->jack);
+	rt5648_set_jack_detect(codec, &ctx->jack, &ctx->jack, &ctx->jack);
 
 	return ret;
 }
@@ -279,7 +279,7 @@ static struct snd_soc_dai_link cht_dailink[] = {
 		.cpu_dai_name = "ssp0-port",
 		.platform_name = "sst-mfld-platform",
 		.no_pcm = 1,
-		.codec_dai_name = "rt5645-aif1",
+		.codec_dai_name = "rt5648-aif1",
 		.codec_name = "i2c-10EC5648:00",
 		.dai_fmt = SND_SOC_DAIFMT_DSP_B | SND_SOC_DAIFMT_IB_NF
 					| SND_SOC_DAIFMT_CBS_CFS,
@@ -293,21 +293,21 @@ static struct snd_soc_dai_link cht_dailink[] = {
 };
 
 /* SoC card */
-static struct snd_soc_card snd_soc_card_chtrt5645 = {
-	.name = "bytcr-rt5645",
+static struct snd_soc_card snd_soc_card_chtrt5648 = {
+	.name = "bytcr-rt5648",
 	.owner = THIS_MODULE,
 	.dai_link = cht_dailink,
 	.num_links = ARRAY_SIZE(cht_dailink),
 	.dapm_widgets = cht_dapm_widgets,
 	.num_dapm_widgets = ARRAY_SIZE(cht_dapm_widgets),
-	.dapm_routes = cht_rt5645_audio_map,
-	.num_dapm_routes = ARRAY_SIZE(cht_rt5645_audio_map),
+	.dapm_routes = cht_rt5648_audio_map,
+	.num_dapm_routes = ARRAY_SIZE(cht_rt5648_audio_map),
 	.controls = cht_mc_controls,
 	.num_controls = ARRAY_SIZE(cht_mc_controls),
 };
 
 static struct cht_acpi_card snd_soc_cards[] = {
-	{"10EC5648", CODEC_TYPE_RT5645, &snd_soc_card_chtrt5645},
+	{"10EC5648", CODEC_TYPE_RT5648, &snd_soc_card_chtrt5648},
 };
 
 static int snd_cht_mc_probe(struct platform_device *pdev)
@@ -352,7 +352,7 @@ static int snd_cht_mc_probe(struct platform_device *pdev)
 
 static struct platform_driver snd_cht_mc_driver = {
 	.driver = {
-		.name = "bytcr_rt5645",
+		.name = "bytcr_rt5648",
 	},
 	.probe = snd_cht_mc_probe,
 };
@@ -362,4 +362,4 @@ module_platform_driver(snd_cht_mc_driver)
 MODULE_DESCRIPTION("ASoC Intel(R) Braswell Machine driver");
 MODULE_AUTHOR("Fang, Yang A,N,Harshapriya");
 MODULE_LICENSE("GPL v2");
-MODULE_ALIAS("platform:bytcr_rt5645");
+MODULE_ALIAS("platform:bytcr_rt5648");

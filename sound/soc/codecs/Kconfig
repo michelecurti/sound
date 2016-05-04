@@ -103,6 +103,7 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_RT5631 if I2C
 	select SND_SOC_RT5640 if I2C
 	select SND_SOC_RT5645 if I2C
+	select SND_SOC_RT5648 if I2C
 	select SND_SOC_RT5651 if I2C
 	select SND_SOC_RT5659 if I2C
 	select SND_SOC_RT5670 if I2C
@@ -596,6 +597,7 @@ config SND_SOC_RL6231
 	default y if SND_SOC_RT5616=y
 	default y if SND_SOC_RT5640=y
 	default y if SND_SOC_RT5645=y
+	default y if SND_SOC_RT5648=y
 	default y if SND_SOC_RT5651=y
 	default y if SND_SOC_RT5659=y
 	default y if SND_SOC_RT5670=y
@@ -604,6 +606,7 @@ config SND_SOC_RL6231
 	default m if SND_SOC_RT5616=m
 	default m if SND_SOC_RT5640=m
 	default m if SND_SOC_RT5645=m
+	default m if SND_SOC_RT5648=m
 	default m if SND_SOC_RT5651=m
 	default m if SND_SOC_RT5659=m
 	default m if SND_SOC_RT5670=m
@@ -639,6 +642,9 @@ config SND_SOC_RT5640
 	tristate
 
 config SND_SOC_RT5645
+        tristate
+
+config SND_SOC_RT5648
         tristate
 
 config SND_SOC_RT5651
