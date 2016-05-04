@@ -43,6 +43,8 @@
 
 #define RT5648_HWEQ_NUM 57
 
+static int ret_headset_status; /* XXX ? */
+
 static const struct regmap_range_cfg rt5648_ranges[] = {
 	{
 		.name = "PR",
@@ -219,13 +221,18 @@ static bool rt5648_volatile_register(struct device *dev, unsigned int reg)
 		}
 	}
 
+
 	switch (reg) {
 	case RT5648_RESET:
+	case RT5648_PDM_DATA_CTRL1:
+	case RT5648_PDM1_DATA_CTRL4:
 	case RT5648_PRIV_DATA:
-	case RT5648_IN1_CTRL1:
-	case RT5648_IN1_CTRL2:
-	case RT5648_IN1_CTRL3:
+	case RT5648_CJ_CTRL1:
+	case RT5648_CJ_CTRL2:
+	case RT5648_CJ_CTRL3:
 	case RT5648_A_JD_CTRL1:
+	case RT5648_A_JD_CTRL2:
+	case RT5648_VAD_CTRL5:
 	case RT5648_ADC_EQ_CTRL1:
 	case RT5648_EQ_CTRL1:
 	case RT5648_ALC_CTRL_1:
@@ -233,6 +240,7 @@ static bool rt5648_volatile_register(struct device *dev, unsigned int reg)
 	case RT5648_IRQ_CTRL3:
 	case RT5648_INT_IRQ_ST:
 	case RT5648_IL_CMD:
+	case RT5648_DIG_MISC:
 	case RT5648_VENDOR_ID:
 	case RT5648_VENDOR_ID1:
 	case RT5648_VENDOR_ID2:
@@ -258,13 +266,15 @@ static bool rt5648_readable_register(struct device *dev, unsigned int reg)
 	case RT5648_SPK_VOL:
 	case RT5648_HP_VOL:
 	case RT5648_LOUT1:
-	case RT5648_IN1_CTRL1:
-	case RT5648_IN1_CTRL2:
-	case RT5648_IN1_CTRL3:
-	case RT5648_IN2_CTRL:
+	case RT5648_CJ_CTRL1:
+	case RT5648_CJ_CTRL2:
+	case RT5648_CJ_CTRL3:
+	case RT5648_IN1_IN2:
+	case RT5648_IN3:
 	case RT5648_INL1_INR1_VOL:
 	case RT5648_SPK_FUNC_LIM:
 	case RT5648_ADJ_HPF_CTRL:
+	case RT5648_SIDETONE_CTRL:
 	case RT5648_DAC1_DIG_VOL:
 	case RT5648_DAC2_DIG_VOL:
 	case RT5648_DAC_CTRL:
@@ -280,6 +290,10 @@ static bool rt5648_readable_register(struct device *dev, unsigned int reg)
 	case RT5648_DIG_MIXER:
 	case RT5648_DIG_INF1_DATA:
 	case RT5648_PDM_OUT_CTRL:
+	case RT5648_PDM_DATA_CTRL1:
+	case RT5648_PDM1_DATA_CTRL2:
+	case RT5648_PDM1_DATA_CTRL3:
+	case RT5648_PDM1_DATA_CTRL4:
 	case RT5648_REC_L1_MIXER:
 	case RT5648_REC_L2_MIXER:
 	case RT5648_REC_R1_MIXER:
@@ -320,37 +334,44 @@ static bool rt5648_readable_register(struct device *dev, unsigned int reg)
 	case RT5648_PRIV_DATA:
 	case RT5648_I2S1_SDP:
 	case RT5648_I2S2_SDP:
+	case RT5648_I2S3_SDP:
 	case RT5648_ADDA_CLK1:
 	case RT5648_ADDA_CLK2:
 	case RT5648_DMIC_CTRL1:
 	case RT5648_DMIC_CTRL2:
 	case RT5648_TDM_CTRL_1:
 	case RT5648_TDM_CTRL_2:
-	case RT5648_TDM_CTRL_3:
 	case RT5648_GLB_CLK:
 	case RT5648_PLL_CTRL1:
 	case RT5648_PLL_CTRL2:
 	case RT5648_ASRC_1:
 	case RT5648_ASRC_2:
 	case RT5648_ASRC_3:
-	case RT5648_ASRC_4:
+	case RT5648_ASRC_8:
 	case RT5648_DEPOP_M1:
 	case RT5648_DEPOP_M2:
 	case RT5648_DEPOP_M3:
 	case RT5648_CHARGE_PUMP:
 	case RT5648_MICBIAS:
 	case RT5648_A_JD_CTRL1:
+	case RT5648_A_JD_CTRL2:
+	case RT5648_VAD_CTRL1:
+	case RT5648_VAD_CTRL2:
+	case RT5648_VAD_CTRL3:
 	case RT5648_VAD_CTRL4:
+	case RT5648_VAD_CTRL5:
 	case RT5648_CLSD_OUT_CTRL:
+	case RT5648_CLSD_OUT_CTRL1:
+	case RT5648_CLSD_OUT_CTRL2:
 	case RT5648_ADC_EQ_CTRL1:
 	case RT5648_ADC_EQ_CTRL2:
 	case RT5648_EQ_CTRL1:
 	case RT5648_EQ_CTRL2:
+	case RT5648_ALC_DRC_CTRL1:
+	case RT5648_ALC_DRC_CTRL2:
 	case RT5648_ALC_CTRL_1:
 	case RT5648_ALC_CTRL_2:
 	case RT5648_ALC_CTRL_3:
-	case RT5648_ALC_CTRL_4:
-	case RT5648_ALC_CTRL_5:
 	case RT5648_JD_CTRL:
 	case RT5648_IRQ_CTRL1:
 	case RT5648_IRQ_CTRL2:
@@ -359,7 +380,10 @@ static bool rt5648_readable_register(struct device *dev, unsigned int reg)
 	case RT5648_GPIO_CTRL1:
 	case RT5648_GPIO_CTRL2:
 	case RT5648_GPIO_CTRL3:
-	case RT5648_BASS_BACK:
+	case RT5648_GPIO_CTRL4:
+	case RT5648_SCRABBLE_FUN:
+	case RT5648_SCRABBLE_CTRL:
+	case RT5648_BASE_BACK:
 	case RT5648_MP3_PLUS1:
 	case RT5648_MP3_PLUS2:
 	case RT5648_ADJ_HPF1:
@@ -371,7 +395,7 @@ static bool rt5648_readable_register(struct device *dev, unsigned int reg)
 	case RT5648_IL_CMD2:
 	case RT5648_IL_CMD3:
 	case RT5648_DRC1_HL_CTRL1:
-	case RT5648_DRC2_HL_CTRL1:
+	case RT5648_DRC1_HL_CTRL2:
 	case RT5648_ADC_MONO_HP_CTRL1:
 	case RT5648_ADC_MONO_HP_CTRL2:
 	case RT5648_DRC2_CTRL1:
@@ -381,7 +405,7 @@ static bool rt5648_readable_register(struct device *dev, unsigned int reg)
 	case RT5648_DRC2_CTRL5:
 	case RT5648_JD_CTRL3:
 	case RT5648_JD_CTRL4:
-	case RT5648_GEN_CTRL1:
+	case RT5648_DIG_MISC:
 	case RT5648_GEN_CTRL2:
 	case RT5648_GEN_CTRL3:
 	case RT5648_VENDOR_ID:
@@ -551,9 +575,9 @@ static const struct snd_kcontrol_new rt5648_snd_controls[] = {
 		RT5648_L_VOL_SFT + 1, RT5648_R_VOL_SFT + 1, 87, 0, dac_vol_tlv),
 
 	/* IN1/IN2 Control */
-	SOC_SINGLE_TLV("IN1 Boost", RT5648_IN1_CTRL1,
+	SOC_SINGLE_TLV("IN1 Boost", RT5648_IN1_IN2,
 		RT5648_BST_SFT1, 12, 0, bst_tlv),
-	SOC_SINGLE_TLV("IN2 Boost", RT5648_IN2_CTRL,
+	SOC_SINGLE_TLV("IN2 Boost", RT5648_IN3,
 		RT5648_BST_SFT2, 8, 0, bst_tlv),
 
 	/* INL/INR Volume Control */
@@ -2404,29 +2428,20 @@ static int rt5648_set_tdm_slot(struct snd_soc_dai *dai, unsigned int tx_mask,
 			unsigned int rx_mask, int slots, int slot_width)
 {
 	struct snd_soc_codec *codec = dai->codec;
-	unsigned int i_slot_sft, o_slot_sft, i_width_sht, o_width_sht, en_sft;
-	unsigned int mask, val = 0;
+	unsigned int val = 0;
 
-	en_sft = 14;
-	i_slot_sft = o_slot_sft = 12;
-	i_width_sht = o_width_sht = 10;
-	mask = 0x7c00;
-
-	if (rx_mask || tx_mask) {
-		val |= (1 << en_sft);
-		snd_soc_update_bits(codec, RT5648_BASS_BACK,
-			RT5648_G_BB_BST_MASK, RT5648_G_BB_BST_25DB);
-	}
+	if (rx_mask || tx_mask)
+		val |= (1 << 14);
 
 	switch (slots) {
 	case 4:
-		val |= (1 << i_slot_sft) | (1 << o_slot_sft);
+		val |= (1 << 12);
 		break;
 	case 6:
-		val |= (2 << i_slot_sft) | (2 << o_slot_sft);
+		val |= (2 << 12);
 		break;
 	case 8:
-		val |= (3 << i_slot_sft) | (3 << o_slot_sft);
+		val |= (3 << 12);
 		break;
 	case 2:
 	default:
@@ -2435,179 +2450,117 @@ static int rt5648_set_tdm_slot(struct snd_soc_dai *dai, unsigned int tx_mask,
 
 	switch (slot_width) {
 	case 20:
-		val |= (1 << i_width_sht) | (1 << o_width_sht);
+		val |= (1 << 10);
 		break;
 	case 24:
-		val |= (2 << i_width_sht) | (2 << o_width_sht);
+		val |= (2 << 10);
 		break;
 	case 32:
-		val |= (3 << i_width_sht) | (3 << o_width_sht);
+		val |= (3 << 10);
 		break;
 	case 16:
 	default:
 		break;
 	}
 
-	snd_soc_update_bits(codec, RT5648_TDM_CTRL_1, mask, val);
+	snd_soc_update_bits(codec, RT5648_TDM_CTRL_1, 0x7c00, val);
 
 	return 0;
 }
 
 static int rt5648_set_bias_level(struct snd_soc_codec *codec,
 			enum snd_soc_bias_level level)
+
 {
 	struct rt5648_priv *rt5648 = snd_soc_codec_get_drvdata(codec);
 
 	switch (level) {
+	case SND_SOC_BIAS_ON:
+		break;
+
 	case SND_SOC_BIAS_PREPARE:
-		if (SND_SOC_BIAS_STANDBY == snd_soc_codec_get_bias_level(codec)) {
+		break;
+
+	case SND_SOC_BIAS_STANDBY:
+		if (SND_SOC_BIAS_OFF == snd_soc_codec_get_bias_level(codec)) {
 			snd_soc_update_bits(codec, RT5648_PWR_ANLG1,
 				RT5648_PWR_VREF1 | RT5648_PWR_MB |
 				RT5648_PWR_BG | RT5648_PWR_VREF2,
 				RT5648_PWR_VREF1 | RT5648_PWR_MB |
 				RT5648_PWR_BG | RT5648_PWR_VREF2);
-			mdelay(10);
+			msleep(10);
 			snd_soc_update_bits(codec, RT5648_PWR_ANLG1,
 				RT5648_PWR_FV1 | RT5648_PWR_FV2,
 				RT5648_PWR_FV1 | RT5648_PWR_FV2);
-			snd_soc_update_bits(codec, RT5648_GEN_CTRL1,
+			snd_soc_update_bits(codec, RT5648_DIG_MISC,
 				RT5648_DIG_GATE_CTRL, RT5648_DIG_GATE_CTRL);
-		}
-		break;
-
-	case SND_SOC_BIAS_STANDBY:
-		snd_soc_update_bits(codec, RT5648_PWR_ANLG1,
-			RT5648_PWR_VREF1 | RT5648_PWR_MB |
-			RT5648_PWR_BG | RT5648_PWR_VREF2,
-			RT5648_PWR_VREF1 | RT5648_PWR_MB |
-			RT5648_PWR_BG | RT5648_PWR_VREF2);
-		mdelay(10);
-		snd_soc_update_bits(codec, RT5648_PWR_ANLG1,
-			RT5648_PWR_FV1 | RT5648_PWR_FV2,
-			RT5648_PWR_FV1 | RT5648_PWR_FV2);
-		if (snd_soc_codec_get_bias_level(codec) == SND_SOC_BIAS_OFF) {
-			snd_soc_write(codec, RT5648_DEPOP_M2, 0x1140);
-			msleep(40);
-			if (rt5648->en_button_func)
-				queue_delayed_work(system_power_efficient_wq,
-					&rt5648->jack_detect_work,
-					msecs_to_jiffies(0));
+			snd_soc_cache_sync(codec);
 		}
 		break;
 
 	case SND_SOC_BIAS_OFF:
 		snd_soc_write(codec, RT5648_DEPOP_M2, 0x1100);
-		if (!rt5648->en_button_func)
-			snd_soc_update_bits(codec, RT5648_GEN_CTRL1,
-					RT5648_DIG_GATE_CTRL, 0);
-		snd_soc_update_bits(codec, RT5648_PWR_ANLG1,
-				RT5648_PWR_VREF1 | RT5648_PWR_MB |
-				RT5648_PWR_BG | RT5648_PWR_VREF2 |
-				RT5648_PWR_FV1 | RT5648_PWR_FV2, 0x0);
+		snd_soc_update_bits(codec, RT5648_DIG_MISC,
+				RT5648_DIG_GATE_CTRL, 0);
+		snd_soc_write(codec, RT5648_PWR_DIG1, 0x0000);
+		snd_soc_write(codec, RT5648_PWR_DIG2, 0x0000);
+		snd_soc_write(codec, RT5648_PWR_VOL, 0x0000);
+		snd_soc_write(codec, RT5648_PWR_MIXER, 0x0002);
+		if (rt5648->jack_type == SND_JACK_HEADSET) {
+			snd_soc_write(codec, RT5648_PWR_ANLG1, 0x2802);
+			snd_soc_write(codec, RT5648_PWR_ANLG2, 0x0804);
+		} else {
+			snd_soc_write(codec, RT5648_PWR_ANLG1, 0x0000);
+			snd_soc_write(codec, RT5648_PWR_ANLG2, 0x0000);
+		}
 		break;
 
 	default:
 		break;
 	}
+	snd_soc_codec_get_dapm(codec)->bias_level = level;
 
 	return 0;
 }
 
-static void rt5648_enable_push_button_irq(struct snd_soc_codec *codec,
-	bool enable)
-{
-	struct snd_soc_dapm_context *dapm = snd_soc_codec_get_dapm(codec);
-
-	if (enable) {
-		snd_soc_dapm_force_enable_pin(dapm, "ADC L power");
-		snd_soc_dapm_force_enable_pin(dapm, "ADC R power");
-		snd_soc_dapm_sync(dapm);
-
-		snd_soc_update_bits(codec,
-					RT5648_INT_IRQ_ST, 0x8, 0x8);
-	} else {
-		snd_soc_update_bits(codec, RT5648_INT_IRQ_ST, 0x8, 0x0);
-
-		snd_soc_dapm_disable_pin(dapm, "ADC L power");
-		snd_soc_dapm_disable_pin(dapm, "ADC R power");
-		snd_soc_dapm_sync(dapm);
-	}
-}
-
 static int rt5648_jack_detect(struct snd_soc_codec *codec, int jack_insert)
 {
-	struct snd_soc_dapm_context *dapm = snd_soc_codec_get_dapm(codec);
 	struct rt5648_priv *rt5648 = snd_soc_codec_get_drvdata(codec);
-	unsigned int val;
+	int reg63, reg64;
 
-	if (jack_insert) {
-		regmap_write(rt5648->regmap, RT5648_CHARGE_PUMP, 0x0006);
-
-		/* for jack type detect */
-		snd_soc_dapm_force_enable_pin(dapm, "LDO2");
-		snd_soc_dapm_force_enable_pin(dapm, "Mic Det Power");
-		snd_soc_dapm_sync(dapm);
-		if (!dapm->card->instantiated) {
-			/* Power up necessary bits for JD if dapm is
-			   not ready yet */
-			regmap_update_bits(rt5648->regmap, RT5648_PWR_ANLG1,
-				RT5648_PWR_MB | RT5648_PWR_VREF2,
-				RT5648_PWR_MB | RT5648_PWR_VREF2);
-			regmap_update_bits(rt5648->regmap, RT5648_PWR_MIXER,
-				RT5648_PWR_LDO2, RT5648_PWR_LDO2);
-			regmap_update_bits(rt5648->regmap, RT5648_PWR_VOL,
-				RT5648_PWR_MIC_DET, RT5648_PWR_MIC_DET);
-		}
-
-		regmap_write(rt5648->regmap, RT5648_JD_CTRL3, 0x00f0);
-		regmap_update_bits(rt5648->regmap, RT5648_IN1_CTRL2,
-			RT5648_CBJ_MN_JD, RT5648_CBJ_MN_JD);
-		regmap_update_bits(rt5648->regmap, RT5648_IN1_CTRL1,
-			RT5648_CBJ_BST1_EN, RT5648_CBJ_BST1_EN);
-		msleep(100);
-		regmap_update_bits(rt5648->regmap, RT5648_IN1_CTRL2,
-			RT5648_CBJ_MN_JD, 0);
-
-		msleep(600);
-		regmap_read(rt5648->regmap, RT5648_IN1_CTRL3, &val);
-		val &= 0x7;
-		dev_dbg(codec->dev, "val = %d\n", val);
-
-		if (val == 1 || val == 2) {
-			rt5648->jack_type = SND_JACK_HEADSET;
-			if (rt5648->en_button_func) {
-				rt5648_enable_push_button_irq(codec, true);
-			}
-		} else {
-			snd_soc_dapm_disable_pin(dapm, "Mic Det Power");
-			snd_soc_dapm_sync(dapm);
+	if(jack_insert) {
+		reg63 = snd_soc_read(codec, RT5648_PWR_ANLG1);
+		reg64 = snd_soc_read(codec, RT5648_PWR_ANLG2);
+		snd_soc_update_bits(codec, RT5648_PWR_ANLG1,
+			RT5648_PWR_MB | RT5648_PWR_BG | RT5648_LDO_SEL_MASK,
+			RT5648_PWR_MB | RT5648_PWR_BG | 0x2);
+		snd_soc_update_bits(codec, RT5648_PWR_ANLG2,
+			RT5648_PWR_MB1, RT5648_PWR_MB1);
+		snd_soc_update_bits(codec, RT5648_MICBIAS,
+			RT5648_MIC1_OVCD_MASK, RT5648_MIC1_OVCD_EN);
+		msleep(200);
+		if (snd_soc_read(codec, RT5648_IRQ_CTRL3) & 0x300) {
 			rt5648->jack_type = SND_JACK_HEADPHONE;
+			snd_soc_write(codec, RT5648_PWR_ANLG1, reg63);
+			snd_soc_write(codec, RT5648_PWR_ANLG2, reg64);
+		} else {
+			rt5648->jack_type = SND_JACK_HEADSET;
+			snd_soc_update_bits(codec, RT5648_IRQ_CTRL3,
+				RT5648_IRQ_MB1_OC_MASK, RT5648_IRQ_MB1_OC_NOR);
 		}
-		if (rt5648->pdata.jd_invert)
-			regmap_update_bits(rt5648->regmap, RT5648_IRQ_CTRL2,
-				RT5648_JD_1_1_MASK, RT5648_JD_1_1_NOR);
-	} else { /* jack out */
+	} else {
+		snd_soc_update_bits(codec, RT5648_MICBIAS,
+			RT5648_MIC1_OVCD_MASK, RT5648_MIC1_OVCD_DIS);
+		snd_soc_update_bits(codec, RT5648_IRQ_CTRL3,
+			RT5648_IRQ_MB1_OC_MASK, RT5648_IRQ_MB1_OC_BP);
 		rt5648->jack_type = 0;
-
-		regmap_update_bits(rt5648->regmap, RT5648_HP_VOL,
-			RT5648_L_MUTE | RT5648_R_MUTE,
-			RT5648_L_MUTE | RT5648_R_MUTE);
-		regmap_update_bits(rt5648->regmap, RT5648_IN1_CTRL2,
-			RT5648_CBJ_MN_JD, RT5648_CBJ_MN_JD);
-		regmap_update_bits(rt5648->regmap, RT5648_IN1_CTRL1,
-			RT5648_CBJ_BST1_EN, 0);
-
-		if (rt5648->en_button_func)
-			rt5648_enable_push_button_irq(codec, false);
-
-		if (rt5648->pdata.jd_mode == 0)
-			snd_soc_dapm_disable_pin(dapm, "LDO2");
-		snd_soc_dapm_disable_pin(dapm, "Mic Det Power");
-		snd_soc_dapm_sync(dapm);
-		if (rt5648->pdata.jd_invert)
-			regmap_update_bits(rt5648->regmap, RT5648_IRQ_CTRL2,
-				RT5648_JD_1_1_MASK, RT5648_JD_1_1_INV);
+		if (snd_soc_codec_get_bias_level(codec) == SND_SOC_BIAS_OFF) {
+			snd_soc_write(codec, RT5648_PWR_ANLG1, 0x0000);
+			snd_soc_write(codec, RT5648_PWR_ANLG2, 0x0004);
+		}
 	}
+
+	ret_headset_status = rt5648->jack_type;
 
 	return rt5648->jack_type;
 }
@@ -2939,70 +2892,6 @@ static const struct acpi_device_id rt5648_acpi_match[] = {
 MODULE_DEVICE_TABLE(acpi, rt5648_acpi_match);
 #endif
 
-static struct rt5648_platform_data general_platform_data = {
-	.dmic1_data_pin = RT5648_DMIC1_DISABLE,
-	.dmic2_data_pin = RT5648_DMIC_DATA_IN2P,
-	.jd_mode = 3,
-};
-
-static const struct dmi_system_id dmi_platform_intel_braswell[] = {
-	{
-		.ident = "Intel Strago",
-		.matches = {
-			DMI_MATCH(DMI_PRODUCT_NAME, "Strago"),
-		},
-	},
-	{
-		.ident = "Google Chrome",
-		.matches = {
-			DMI_MATCH(DMI_SYS_VENDOR, "GOOGLE"),
-		},
-	},
-	{ }
-};
-
-static struct rt5648_platform_data buddy_platform_data = {
-	.dmic1_data_pin = RT5648_DMIC_DATA_GPIO5,
-	.dmic2_data_pin = RT5648_DMIC_DATA_IN2P,
-	.jd_mode = 3,
-	.jd_invert = true,
-};
-
-static struct dmi_system_id dmi_platform_intel_broadwell[] = {
-	{
-		.ident = "Chrome Buddy",
-		.matches = {
-			DMI_MATCH(DMI_PRODUCT_NAME, "Buddy"),
-		},
-	},
-	{ }
-};
-
-static bool rt5648_check_dp(struct device *dev)
-{
-	if (device_property_present(dev, "realtek,in2-differential") ||
-		device_property_present(dev, "realtek,dmic1-data-pin") ||
-		device_property_present(dev, "realtek,dmic2-data-pin") ||
-		device_property_present(dev, "realtek,jd-mode"))
-		return true;
-
-	return false;
-}
-
-static int rt5648_parse_dt(struct rt5648_priv *rt5648, struct device *dev)
-{
-	rt5648->pdata.in2_diff = device_property_read_bool(dev,
-		"realtek,in2-differential");
-	device_property_read_u32(dev,
-		"realtek,dmic1-data-pin", &rt5648->pdata.dmic1_data_pin);
-	device_property_read_u32(dev,
-		"realtek,dmic2-data-pin", &rt5648->pdata.dmic2_data_pin);
-	device_property_read_u32(dev,
-		"realtek,jd-mode", &rt5648->pdata.jd_mode);
-
-	return 0;
-}
-
 static int rt5648_i2c_probe(struct i2c_client *i2c,
 		    const struct i2c_device_id *id)
 {
@@ -3021,12 +2910,6 @@ static int rt5648_i2c_probe(struct i2c_client *i2c,
 
 	if (pdata)
 		rt5648->pdata = *pdata;
-	else if (dmi_check_system(dmi_platform_intel_broadwell))
-		rt5648->pdata = buddy_platform_data;
-	else if (rt5648_check_dp(&i2c->dev))
-		rt5648_parse_dt(rt5648, &i2c->dev);
-	else if (dmi_check_system(dmi_platform_intel_braswell))
-		rt5648->pdata = general_platform_data;
 
 	rt5648->gpiod_hp_det = devm_gpiod_get_optional(&i2c->dev, "hp-detect",
 						       GPIOD_IN);
@@ -3076,9 +2959,6 @@ static int rt5648_i2c_probe(struct i2c_client *i2c,
 	if (ret != 0)
 		dev_warn(&i2c->dev, "Failed to apply regmap patch: %d\n", ret);
 
-	if (rt5648->pdata.in2_diff)
-		regmap_update_bits(rt5648->regmap, RT5648_IN2_CTRL,
-					RT5648_IN_DF2, RT5648_IN_DF2);
 
 	if (rt5648->pdata.dmic1_data_pin || rt5648->pdata.dmic2_data_pin) {
 		regmap_update_bits(rt5648->regmap, RT5648_GPIO_CTRL1,
@@ -3238,10 +3118,6 @@ static void rt5648_i2c_shutdown(struct i2c_client *i2c)
 
 	regmap_update_bits(rt5648->regmap, RT5648_GEN_CTRL3,
 		RT5648_RING2_SLEEVE_GND, RT5648_RING2_SLEEVE_GND);
-	regmap_update_bits(rt5648->regmap, RT5648_IN1_CTRL2, RT5648_CBJ_MN_JD,
-		RT5648_CBJ_MN_JD);
-	regmap_update_bits(rt5648->regmap, RT5648_IN1_CTRL1, RT5648_CBJ_BST1_EN,
-		0);
 	msleep(20);
 	regmap_write(rt5648->regmap, RT5648_RESET, 0);
 }

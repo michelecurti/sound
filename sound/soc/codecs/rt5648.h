@@ -23,34 +23,43 @@
 #define RT5648_SPK_VOL				0x01
 #define RT5648_HP_VOL				0x02
 #define RT5648_LOUT1				0x03
-#define RT5648_LOUT_CTRL			0x05
 /* I/O - Input */
-#define RT5648_IN1_CTRL1			0x0a
-#define RT5648_IN1_CTRL2			0x0b
-#define RT5648_IN1_CTRL3			0x0c
-#define RT5648_IN2_CTRL				0x0d
+#define RT5648_CJ_CTRL1				0x0a
+#define RT5648_CJ_CTRL2				0x0b
+#define RT5648_CJ_CTRL3				0x0c
+#define RT5648_IN1_IN2				0x0d
+#define RT5648_IN3				0x0e
 #define RT5648_INL1_INR1_VOL			0x0f
 #define RT5648_SPK_FUNC_LIM			0x14
 #define RT5648_ADJ_HPF_CTRL			0x16
 /* I/O - ADC/DAC/DMIC */
+#define RT5648_SIDETONE_CTRL			0x18
 #define RT5648_DAC1_DIG_VOL			0x19
 #define RT5648_DAC2_DIG_VOL			0x1a
 #define RT5648_DAC_CTRL				0x1b
 #define RT5648_STO1_ADC_DIG_VOL			0x1c
 #define RT5648_MONO_ADC_DIG_VOL			0x1d
 #define RT5648_ADC_BST_VOL1			0x1e
-#define RT5648_ADC_BST_VOL2			0x20
 /* Mixer - D-D */
+#define RT5648_ADC_BST_VOL2			0x20
 #define RT5648_STO1_ADC_MIXER			0x27
 #define RT5648_MONO_ADC_MIXER			0x28
 #define RT5648_AD_DA_MIXER			0x29
 #define RT5648_STO_DAC_MIXER			0x2a
 #define RT5648_MONO_DAC_MIXER			0x2b
 #define RT5648_DIG_MIXER			0x2c
-#define RT5650_A_DAC_SOUR			0x2d
+#define RT5648_DSP_PATH1			0x2d
+#define RT5648_DSP_PATH2			0x2e
 #define RT5648_DIG_INF1_DATA			0x2f
 /* Mixer - PDM */
 #define RT5648_PDM_OUT_CTRL			0x31
+#define RT5648_PDM_DATA_CTRL1			0x32
+#define RT5648_PDM1_DATA_CTRL2			0x33
+#define RT5648_PDM1_DATA_CTRL3			0x34
+#define RT5648_PDM1_DATA_CTRL4			0x35
+#define RT5648_PDM2_DATA_CTRL2			0x36
+#define RT5648_PDM2_DATA_CTRL3			0x37
+#define RT5648_PDM2_DATA_CTRL4			0x38
 /* Mixer - ADC */
 #define RT5648_REC_L1_MIXER			0x3b
 #define RT5648_REC_L2_MIXER			0x3c
@@ -97,6 +106,7 @@
 /* Format - ADC/DAC */
 #define RT5648_I2S1_SDP				0x70
 #define RT5648_I2S2_SDP				0x71
+#define RT5648_I2S3_SDP				0x72
 #define RT5648_ADDA_CLK1			0x73
 #define RT5648_ADDA_CLK2			0x74
 #define RT5648_DMIC_CTRL1			0x75
@@ -105,7 +115,6 @@
 #define RT5648_TDM_CTRL_1			0x77
 #define RT5648_TDM_CTRL_2			0x78
 #define RT5648_TDM_CTRL_3			0x79
-#define RT5650_TDM_CTRL_4			0x7a
 
 /* Function - Analog */
 #define RT5648_GLB_CLK				0x80
@@ -114,25 +123,33 @@
 #define RT5648_ASRC_1				0x83
 #define RT5648_ASRC_2				0x84
 #define RT5648_ASRC_3				0x85
-#define RT5648_ASRC_4				0x8a
+#define RT5648_ASRC_8				0x8a
 #define RT5648_DEPOP_M1				0x8e
 #define RT5648_DEPOP_M2				0x8f
 #define RT5648_DEPOP_M3				0x90
 #define RT5648_CHARGE_PUMP			0x91
 #define RT5648_MICBIAS				0x93
 #define RT5648_A_JD_CTRL1			0x94
+#define RT5648_A_JD_CTRL2			0x95
+#define RT5648_VAD_CTRL1			0x9a
+#define RT5648_VAD_CTRL2			0x9b
+#define RT5648_VAD_CTRL3			0x9c
 #define RT5648_VAD_CTRL4			0x9d
+#define RT5648_VAD_CTRL5			0x9e
 #define RT5648_CLSD_OUT_CTRL			0xa0
+#define RT5648_CLSD_OUT_CTRL1			0xa1
+#define RT5648_CLSD_OUT_CTRL2			0xa2
 /* Function - Digital */
 #define RT5648_ADC_EQ_CTRL1			0xae
 #define RT5648_ADC_EQ_CTRL2			0xaf
 #define RT5648_EQ_CTRL1				0xb0
 #define RT5648_EQ_CTRL2				0xb1
-#define RT5648_ALC_CTRL_1			0xb3
-#define RT5648_ALC_CTRL_2			0xb4
-#define RT5648_ALC_CTRL_3			0xb5
-#define RT5648_ALC_CTRL_4			0xb6
-#define RT5648_ALC_CTRL_5			0xb7
+#define RT5648_ALC_DRC_CTRL1			0xb2
+#define RT5648_ALC_DRC_CTRL2			0xb3
+#define RT5648_ALC_CTRL_1			0xb4
+#define RT5648_ALC_CTRL_2			0xb5
+#define RT5648_ALC_CTRL_3			0xb6
+#define RT5648_ALC_CTRL_4			0xb7
 #define RT5648_JD_CTRL				0xbb
 #define RT5648_IRQ_CTRL1			0xbc
 #define RT5648_IRQ_CTRL2			0xbd
@@ -141,7 +158,10 @@
 #define RT5648_GPIO_CTRL1			0xc0
 #define RT5648_GPIO_CTRL2			0xc1
 #define RT5648_GPIO_CTRL3			0xc2
-#define RT5648_BASS_BACK			0xcf
+#define RT5648_GPIO_CTRL4			0xc3
+#define RT5648_SCRABBLE_FUN			0xcd
+#define RT5648_SCRABBLE_CTRL			0xce
+#define RT5648_BASE_BACK			0xcf
 #define RT5648_MP3_PLUS1			0xd0
 #define RT5648_MP3_PLUS2			0xd1
 #define RT5648_ADJ_HPF1				0xd3
@@ -152,10 +172,10 @@
 #define RT5648_IL_CMD				0xdb
 #define RT5648_IL_CMD2				0xdc
 #define RT5648_IL_CMD3				0xdd
-#define RT5650_4BTN_IL_CMD1			0xdf
-#define RT5650_4BTN_IL_CMD2			0xe0
-#define RT5648_DRC1_HL_CTRL1			0xe7
-#define RT5648_DRC2_HL_CTRL1			0xe9
+#define RT5648_DRC1_HL_CTRL1			0xe6
+#define RT5648_DRC1_HL_CTRL2			0xe7
+#define RT5648_DRC2_HL_CTRL1			0xe8
+#define RT5648_DRC2_HL_CTRL2			0xe9
 #define RT5648_MUTI_DRC_CTRL1			0xea
 #define RT5648_ADC_MONO_HP_CTRL1		0xec
 #define RT5648_ADC_MONO_HP_CTRL2		0xed
@@ -167,7 +187,7 @@
 #define RT5648_JD_CTRL3				0xf8
 #define RT5648_JD_CTRL4				0xf9
 /* General Control */
-#define RT5648_GEN_CTRL1			0xfa
+#define RT5648_DIG_MISC				0xfa
 #define RT5648_GEN_CTRL2			0xfb
 #define RT5648_GEN_CTRL3			0xfc
 
