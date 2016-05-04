@@ -411,7 +411,7 @@ static struct sst_acpi_mach sst_acpi_bytcr[] = {
 						&byt_rvp_platform_data },
 	{"INTCCFFD", "bytcr_rt5640", "intel/fw_sst_0f28", "bytcr_rt5640", NULL,
 						&byt_rvp_platform_data },
-	{"10EC5648", "bytcr_rt5645", "intel/fw_sst_0f28", "bytcr_rt5645", NULL,
+	{"10EC5648", "bytcr_rt5648", "intel/fw_sst_0f28", "bytcr_rt5648", NULL,
 						&byt_rvp_platform_data },
 	{"10EC5651", "bytcr_rt5651", "intel/fw_sst_0f28", "bytcr_rt5651", NULL,
 						&byt_rvp_platform_data },
