@@ -2869,15 +2869,6 @@ static const struct regmap_config rt5648_regmap = {
 	.num_ranges = ARRAY_SIZE(rt5648_ranges),
 };
 
-static const struct regmap_config temp_regmap = {
-	.name="nocache",
-	.reg_bits = 8,
-	.val_bits = 16,
-	.use_single_rw = true,
-	.max_register = RT5648_VENDOR_ID2 + 1,
-	.cache_type = REGCACHE_NONE,
-};
-
 static const struct i2c_device_id rt5648_i2c_id[] = {
 	{ "rt5648", 0 },
 	{ }
@@ -2898,7 +2889,6 @@ static int rt5648_i2c_probe(struct i2c_client *i2c,
 	struct rt5648_platform_data *pdata = dev_get_platdata(&i2c->dev);
 	struct rt5648_priv *rt5648;
 	int ret, i;
-	struct regmap *regmap;
 
 	rt5648 = devm_kzalloc(&i2c->dev, sizeof(struct rt5648_priv),
 				GFP_KERNEL);
@@ -2937,14 +2927,7 @@ static int rt5648_i2c_probe(struct i2c_client *i2c,
 		return ret;
 	}
 
-	regmap = devm_regmap_init_i2c(i2c, &temp_regmap);
-	if (IS_ERR(regmap)) {
-		ret = PTR_ERR(regmap);
-		dev_err(&i2c->dev, "Failed to allocate temp register map: %d\n",
-			ret);
-		return ret;
-	}
-
+	rt5648->regmap = devm_regmap_init_i2c(i2c, &rt5648_regmap);
 	if (IS_ERR(rt5648->regmap)) {
 		ret = PTR_ERR(rt5648->regmap);
 		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
